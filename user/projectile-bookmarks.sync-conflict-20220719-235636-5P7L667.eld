@@ -1,0 +1,1 @@
+("~/" "~/d/scimax/" "~/vc/projects/test6/" "~/vc/projects/test5/")

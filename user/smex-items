@@ -1,0 +1,28 @@
+
+;; ----- smex-history -----
+(
+ eval-buffer
+ package-delete
+ visual-line-mode
+ auto-fill-mode
+ crux-open-with
+ company-mode
+ evil-org-mode
+)
+
+;; ----- smex-data -----
+(
+ (customize-themes . 1)
+ (fff-org-python-newline-and-maybe-indent . 1)
+ (package-refresh-contents . 1)
+ (evil-org-mode . 2)
+ (evil-mode . 3)
+ (org-mode . 1)
+ (org-mode-restart . 1)
+ (company-mode . 1)
+ (crux-open-with . 1)
+ (auto-fill-mode . 5)
+ (visual-line-mode . 1)
+ (package-delete . 1)
+ (eval-buffer . 2)
+)

@@ -1,0 +1,27 @@
+# adapted from https://github.com/purcell/package-lint/blob/master/.github/workflows/test.yml
+name: scimax
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emacs_version:
+          - 26.3
+          - 27.2
+          - snapshot
+
+    steps:
+    - uses: purcell/setup-emacs@master
+      with:
+        version: ${{ matrix.emacs_version }}
+
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: |
+        git clone https://github.com/cask/cask ~/.cask
+        PATH=$HOME/.cask/bin:$PATH cask install
+        PATH=$HOME/.cask/bin:$PATH make test
+        

@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: jupyter-init
+# key: ji
+# contributor:  Farzin Firouzi <farzinf@riseup.net>
+# --
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('dark_background')            # I use a emacs in a dark theme
+plt.rcParams['figure.figsize'] = [12, 6]    # default figure 
+plt.rcParams.update({'font.size': 12})      # and font sizes are too small. let's increase them
+pd.set_option('display.max_columns', None)  # no limit to columns

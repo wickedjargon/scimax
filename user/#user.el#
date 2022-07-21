@@ -1,0 +1,868 @@
+
+(require 'cl)
+;; (load-file "~/d/scimax/scimax-evil.el")
+
+(setq  org-src-block-faces '(("emacs-lisp" (:background "black" :extend t))
+			     ("sh" (:background "black" :extend t))
+			     ("python" (:background "black" :extend t))
+			     ("ipython" (:background "black" :extend t))
+			     ("jupyter-python" (:background "black" :extend t))))
+
+;;Tue 19 Jul 2022 01:24:19 PM EDT 
+
+(setq initial-scratch-message "")                       ;; no message on scratch buffer
+(tool-bar-mode -1)                                      ;; no tool bar
+(scroll-bar-mode -1)                                    ;; no scroll bar
+(defalias 'yes-or-no-p 'y-or-n-p)                       ;; just type `y`, not `yes`
+(menu-bar-mode -1)                                      ;; no menu bar
+;; (setq auto-save-file-name-transforms                    ;;  (save auto save data
+;;       '((".*" "~/.config/emacs/auto-save-list/" t)))    ;;  in a separate directory)
+;; (setq backup-directory-alist                            ;; (save backup files
+;;       '(("." . "~/.config/emacs/backups")))             ;; in a separate directory)
+(blink-cursor-mode -1)                                  ;; don't blink my cursor
+(setq global-auto-revert-non-file-buffers t)            ;; auto revert my files
+(global-auto-revert-mode +1)                            ;; auto revert files and buffers
+(delete-selection-mode +1)                              ;; delete selction when hitting backspace on region
+;; (set-default 'truncate-lines t)                         ;; don't wrap my text
+(add-hook 'prog-mode-hook #'hs-minor-mode)              ;; let me toggle shrink and expansion of code blocks 
+;; (setq custom-file (locate-user-emacs-file "custom.el")) ;; separate custom.el file
+;; (when (file-exists-p custom-file) (load custom-file))   ;; when it exists, load it
+(global-unset-key (kbd "C-x C-c"))                      ;; I accidently hit this sometimes
+(global-unset-key (kbd "C-a"))                          ;; I prefer the vim keybinding
+(setq auth-source-save-behavior nil)                    ;; don't prompt to save auth info in home dir
+(setq-default indent-tabs-mode nil)                     ;; I prefer spaces instead of tabs
+(setq-default tab-width 4)                              ;; I prefer a tab length of 4, not 8
+(setq dired-listing-switches                            ;; I prefer to have dired
+      "-aBhl  --group-directories-first")               ;; group my directories
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;; my functions:
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun fff-clear-shell ()
+  (interactive)
+  (let ((comint-buffer-maximum-size 0))
+    (comint-truncate-buffer)))
+
+(defun fff-remove-blank-lines ()
+  (interactive)
+  (flush-lines "^\s*$" (point-min) (point-max))
+  )
+
+(defun fff-run-haxe ()
+  (interactive)
+  (setq dir-path (file-name-directory (buffer-file-name)))
+  (shell-command (format "haxe --cwd \"%s\" --run Main" dir-path)))
+
+(defun fff-remove-newlines ()
+  (interactive)
+  (save-restriction
+    (narrow-to-region (point) (mark))
+    (goto-char (point-min))
+    (while (search-forward "\n" nil t) (replace-match "" nil t))))
+
+(defun fff-run-lua ()
+  (interactive)
+  (shell-command (format "lua %s" buffer-file-name)))
+
+(defun fff-run-go ()
+  (interactive)
+  (save-buffer)
+  (shell-command (format "go run %s" buffer-file-name)))
+
+(defun fff-run-haskell ()
+  (interactive)
+  (shell-command (format "runhaskell %s" buffer-file-name)))
+
+(defun fff-run-java ()
+  (interactive)
+  (setq dir-path (file-name-directory (buffer-file-name)))
+  (setq file-no-ext (substring (buffer-name) 0 -5))
+  (shell-command (format "cd %s && javac %s && java %s" dir-path (buffer-name) file-no-ext)))
+
+(defun fff-run-c ()
+  (interactive)
+  (setq dir-path (file-name-directory (buffer-file-name)))
+  (setq file-no-ext (substring (buffer-name) 0 -2))
+  (shell-command (format "cd %s && cc -w -o %s %s -lm && ./%s" dir-path file-no-ext (buffer-name) file-no-ext))
+  )
+
+(defun fff-build-pdf ()
+  (interactive)
+  (setq dir-path (file-name-directory (buffer-file-name)))
+  (setq file-no-ext (substring (buffer-name) 0 -2))
+  ;; groff -ms -T pdf -tle  resume.ms > resume.pdf & zathura resume.pdf
+  (shell-command (format "cd %s && groff -ms -T pdf -tle  %s > %s.pdf & zathura %s.pdf"
+                         dir-path (buffer-name) file-no-ext  file-no-ext)))
+
+(defun fff-run-cpp ()
+  (interactive)
+  (setq dir-path (file-name-directory (buffer-file-name)))
+  (setq file-no-ext (substring (buffer-name) 0 -2))
+  (shell-command (format "cd %s && g++ -w -o %s %s -lm && ./%s" dir-path file-no-ext (buffer-name) file-no-ext)))
+
+(defun fff-access-config ()
+  (interactive)
+  (find-file (expand-file-name "" user-emacs-directory)))
+
+(defun fff-access-home-dir()
+  (interactive)
+  (find-file "~/"))
+
+(defun fff-access-sched ()
+  (interactive)
+  (find-file "~/d/personal-notes.md"))
+
+(defun fff-access-bookmarks ()
+  (interactive)
+  (find-file "~/d/bm.md"))
+
+(defun fff-access-hosts ()
+  (interactive)
+  (find-file "/sudo:root@localhost:/etc/hosts"))
+
+(defun fff-access-phonebook ()
+  (interactive)
+  (find-file "~/d/contacts.csv"))
+
+(defun fff-kill-this-buffer ()
+  "Kill the current buffer without asking."
+  (interactive)
+  (kill-buffer (current-buffer)))
+
+(defun fff-switch-to-scratch-buffer ()
+  (interactive)
+  (switch-to-buffer "*scratch*"))
+
+(defun fff-switch-to-scratch-buffer-text-mode ()
+  (interactive)
+  (switch-to-buffer "*scratch*")
+  (text-mode))
+
+(defun fff-copy-file-path ()
+  "Put the current file path on the clipboard"
+  (interactive)
+  (let ((filename (if (equal major-mode 'dired-mode)
+                      default-directory
+                    (buffer-file-name))))
+    (when filename
+      (with-temp-buffer
+        (insert filename)
+        (clipboard-kill-region (point-min) (point-max)))
+      (message filename))))
+
+(defun fff-force-kill-this-buffer ()
+  (interactive)
+  (set-buffer-modified-p nil)
+  (kill-buffer (current-buffer)))
+
+(defun fff-evil-regex-search ()
+  (interactive)
+  (progn
+    (evil-normal-state)
+    (evil-ex "%s/")))
+
+(defun fff-insert-tab()
+  (interactive)
+  (insert "	"))
+
+(defun fff-insert-4-spaces()
+  (interactive)
+  (insert "    "))
+
+(defun fff-toggle-visual-line-mode ()
+  (interactive)
+  (if (not visual-line-mode)
+      (progn
+        (visual-line-mode +1)
+        (message "visual line mode on"))
+    (progn
+      (visual-line-mode -1)
+      (message "visual line mode off")
+      )))
+
+(defun fff-send-to-clipboard (x)
+  (with-temp-buffer
+    (insert x)
+    (clipboard-kill-region (point-min) (point-max))))
+
+(defun fff-c-copy-terminal-command ()
+  (interactive)
+  (setq dir-path (file-name-directory (buffer-file-name)))
+  (setq file-no-ext (substring (buffer-name) 0 -2))
+  (fff-send-to-clipboard (format "cd %s && cc -w -o %s %s -lm && ./%s" dir-path file-no-ext (buffer-name) file-no-ext))
+  )
+
+(defun fff-comment-delete (arg)
+  "Delete the first comment on this line, if any.  Don't touch
+the kill ring.  With prefix ARG, delete comments on that many
+lines starting with this one."
+  (interactive "P")
+  (comment-normalize-vars)
+  (dotimes (_i (prefix-numeric-value arg))
+    (save-excursion
+      (beginning-of-line)
+      (let ((cs (comment-search-forward (line-end-position) t)))
+        (when cs
+          (goto-char cs)
+          (skip-syntax-backward " ")
+          (setq cs (point))
+          (comment-forward)
+          ;; (kill-region cs (if (bolp) (1- (point)) (point))) ; original
+          (delete-region cs (if (bolp) (1- (point)) (point)))  ; replace kill-region with delete-region
+          (indent-according-to-mode))))
+    (if arg (forward-line 1))))
+
+(defun fff-comment-delete-dwim (beg end arg)
+  "Delete comments without touching the kill ring.  With active
+region, delete comments in region.  With prefix, delete comments
+in whole buffer.  With neither, delete comments on current line."
+  (interactive "r\nP")
+  (let ((lines (cond (arg
+                      (count-lines (point-min) (point-max)))
+                     ((region-active-p)
+                      (count-lines beg end)))))
+    (save-excursion
+      (when lines
+        (goto-char (if arg (point-min) beg)))
+      (fff-comment-delete (or lines 1)))))
+
+(defun fff-comment-delete-all ()
+  (interactive)
+  (fff-comment-delete-dwim (point-min) (point-max) +1))
+
+(defun fff-toggle-window-split ()
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+             (next-win-buffer (window-buffer (next-window)))
+             (this-win-edges (window-edges (selected-window)))
+             (next-win-edges (window-edges (next-window)))
+             (this-win-2nd (not (and (<= (car this-win-edges)
+                                         (car next-win-edges))
+                                     (<= (cadr this-win-edges)
+                                         (cadr next-win-edges)))))
+             (splitter
+              (if (= (car this-win-edges)
+                     (car (window-edges (next-window))))
+                  'split-window-horizontally
+                'split-window-vertically)))
+        (delete-other-windows)
+        (let ((first-win (selected-window)))
+          (funcall splitter)
+          (if this-win-2nd (other-window 1))
+          (set-window-buffer (selected-window) this-win-buffer)
+          (set-window-buffer (next-window) next-win-buffer)
+          (select-window first-win)
+          (if this-win-2nd (other-window 1))))))
+
+(defun fff-clear-line ()
+  "Deletes the current line"
+  (interactive) 
+  (progn
+    (delete-region
+     (line-beginning-position)
+     (line-end-position))
+    (evil-delete-backward-char-and-join)
+    )
+  )
+
+(defun fff-switch-to-previous-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
+
+(defun fff-set-scale-to-zero ()
+  (interactive)
+  (text-scale-set 0)
+  )
+
+(defun fff-run-blue ()
+  (interactive)
+  (shell-command (format "blue --line-length 300 %s" (buffer-file-name)))
+  )
+
+(defun fff-flymake-list ()
+  (interactive)
+  (flymake-show-buffer-diagnostics))
+
+(defun fff-title-case-region-or-line (@begin @end)
+  (interactive
+   (if (use-region-p)
+       (list (region-beginning) (region-end))
+     (let (
+           $p1
+           $p2
+           ($skipChars ""))
+       (progn
+         (skip-chars-backward $skipChars (line-beginning-position))
+         (setq $p1 (point))
+         (skip-chars-forward $skipChars (line-end-position))
+         (setq $p2 (point)))
+       (list $p1 $p2))))
+  (let* (
+         ($strPairs [
+                     
+                     ]))
+    (save-excursion
+      (save-restriction
+        (narrow-to-region @begin @end)
+        (upcase-initials-region (point-min) (point-max))
+        (let ((case-fold-search nil))
+          (mapc
+           (lambda ($x)
+             (goto-char (point-min))
+             (while
+                 (search-forward (aref $x 0) nil t)
+               (replace-match (aref $x 1) "FIXEDCASE" "LITERAL")))
+           $strPairs))))))
+
+(defun fff-cycle-hyphen-underscore-space ( &optional @begin @end )
+  (interactive "P")
+  (let ($p1 $p2)
+    (if (and @begin @end)
+        (setq $p1 @begin $p2 @end)
+      (if (use-region-p)
+          (setq $p1 (region-beginning) $p2 (region-end))
+        (if (nth 3 (syntax-ppss))
+            (save-excursion
+              (skip-chars-backward "^\"")
+              (setq $p1 (point))
+              (skip-chars-forward "^\"")
+              (setq $p2 (point)))
+          (let (($skipChars "^\""))
+            (skip-chars-backward $skipChars (line-beginning-position))
+            (setq $p1 (point))
+            (skip-chars-forward $skipChars (line-end-position))
+            (setq $p2 (point))
+            (set-mark $p1)))))
+    (let ( $charArray $length $regionWasActive-p $nowState $changeTo)
+      (setq $charArray ["-" "_" " "])
+      (setq $length (length $charArray))
+      (setq $regionWasActive-p (region-active-p))
+      (setq $nowState (if (eq last-command this-command) (get 'fff-cycle-hyphen-lowline-space 'state) 0 ))
+      (setq $changeTo (elt $charArray $nowState))
+      (save-excursion
+        (save-restriction
+          (narrow-to-region $p1 $p2)
+          (goto-char (point-min))
+          (while (re-search-forward (elt $charArray (% (+ $nowState 2) $length)) (point-max) "move")
+            (replace-match $changeTo t t))))
+      (when (or (string-equal $changeTo " ") $regionWasActive-p)
+        (goto-char $p2)
+        (set-mark $p1)
+        (setq deactivate-mark nil))
+      (put 'fff-cycle-hyphen-lowline-space 'state (% (+ $nowState 1) $length))))
+  (set-transient-map (let (($kmap (make-sparse-keymap))) (define-key $kmap (kbd "t") 'fff-cycle-hyphen-lowline-space ) $kmap)))
+
+(defun fff-toggle-centered-window-mode ()
+  (interactive)
+  (if (not centered-window-mode)
+      (progn
+        (centered-window-mode +1)
+        (global-display-line-numbers-mode -1)
+        (message "centered window mode on"))
+    (progn
+      (centered-window-mode -1)
+      (global-display-line-numbers-mode +1)
+      (message "centered window mode off")
+      )))
+
+(defun fff-mark-gt-point-exchange ()
+  (if (>  (mark) (point))
+      (exchange-point-and-mark)
+    ))
+
+(defun fff-wrap-with-function-call (function-name)
+  (interactive "sFunction name:")
+  (if (and transient-mark-mode mark-active)
+      (progn
+        (setq text-end ")")
+        (setq function-name (concat function-name "("))
+        (fff-mark-gt-point-exchange)
+        (goto-char (region-end))
+        (insert text-end)
+        (goto-char (region-beginning))
+        (insert function-name))
+    (progn
+      (setq text-end ")")
+      (setq function-name (concat function-name "("))
+      (setq bds (bounds-of-thing-at-point 'symbol))
+      (goto-char (cdr bds))
+      (insert text-end)
+      (goto-char (car bds))
+      (insert function-name))))
+
+
+(defun fff-regions-content ()
+  "Return the selected region as a string."
+  (if (use-region-p)
+      (buffer-substring (region-beginning) (region-end))))
+
+(defun fff-print-debug-line ()
+  (interactive)
+  (save-excursion
+    (setq expression (thing-at-point 'symbol))
+    (if (and transient-mark-mode mark-active)
+        (setq expression (fff-regions-content)))
+    (evil-open-below 1)
+    (insert expression)
+    (setq text-beg (concat "print(\"" expression " -->\", "))
+    (setq text-end ") # ff-debug")
+    (evil-first-non-blank)
+    (insert text-beg)
+    (end-of-line)
+    (insert text-end)
+    )
+  )
+
+
+(defun fff-delete-debug-lines ()
+  (interactive)
+  (replace-regexp-in-region ".* # ff-debug$" "" (point-min) (point-max))
+  )
+
+(defun fff-python-format ()
+  (interactive)
+  (fff-remove-blank-lines)
+  (elpy-yapf-fix-code)
+  (fff-run-blue)
+  )
+
+(defun fff-evil-paste-and-indent-after ()
+  (interactive)
+  (evil-with-undo
+    (progn
+      (evil-paste-after 1)
+      (evil-indent (evil-get-marker ?\[) (evil-get-marker ?\])))))
+
+(defun fff-evil-paste-and-indent-before ()
+  (interactive)
+  (evil-with-undo
+    (progn
+      (evil-paste-before 1)
+      (evil-indent (evil-get-marker ?\[) (evil-get-marker ?\])))))
+
+
+
+(defun fff-display-python ()
+  (interactive)
+  (run-python (python-shell-calculate-command) nil nil)
+  (display-buffer-pop-up-window  (get-buffer-create "*Python*") nil) 
+  )
+
+
+(defun fff-run-python (&optional ARG)
+  (interactive "P")
+  (elpy-shell-send-region-or-buffer ARG)
+  (switch-to-buffer  (get-buffer-create "*Python*") nil) 
+  (end-of-buffer)
+  (evil-append-line 1)
+  (evil-force-normal-state)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; load site-lisp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'use-package)
+
+;; (use-package doom-modeline
+;;   :ensure t
+;; :custom ((doom-modeline-height 16))
+;;   :init (doom-modeline-mode 1))
+
+;; (use-package yasnippet-snippets 
+;;   :ensure nil
+;;   :init (add-to-list 'load-path (expand-file-name "~/.config/emacs/site-lisp/yasnippet-snippets/"))
+;;   :load-path "yasnippet-snippets.el"
+;;   :config
+;;   (add-hook 'prog-mode-hook #'yas-minor-mode)
+;;   )
+
+(use-package evil-collection
+  :after evil
+  :ensure t
+  :config
+  (evil-collection-init)
+  (evil-collection-define-key 'normal 'dired-mode-map)
+  )
+
+;; ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;; ;; use-package setup:
+;; ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq evil-undo-system 'undo-fu)
+(setq evil-want-integration t)
+(setq evil-want-keybinding nil)
+
+(use-package evil-leader
+  :defer t
+  :commands (evil-leader-mode)
+  :ensure t
+  :init
+  (global-evil-leader-mode)
+  :config
+  (progn
+    ;; TODO: let's use some advise instead of over writing like this:
+    ;; or find out what is causing this. does this happen with base evil + base emacs?
+    (defun comment-line (n)
+      (interactive "p")
+      (if (use-region-p)
+          (comment-or-uncomment-region
+           (save-excursion
+             (goto-char (region-beginning))
+             (line-beginning-position))
+           (save-excursion
+             (goto-char (region-end))
+             ;; (line-end-position)
+             ))
+        (when (and (eq last-command 'comment-line-backward)
+                   (natnump n))
+          (setq n (- n)))
+        (let ((range
+               (list (line-beginning-position)
+                     (goto-char (line-end-position n)))))
+          (comment-or-uncomment-region
+           (apply #'min range)
+           (apply #'max range)))
+        (forward-line 1)
+        (back-to-indentation)
+        (unless (natnump n) (setq this-command 'comment-line-backward))))
+
+    (fset 'fff-C-x-C-e
+          (kmacro-lambda-form [?\C-x ?\C-e] 0 "%d"))
+
+
+    (fset 'fff-C-c-C-c
+          (kmacro-lambda-form [?\C-c ?\C-c] 0 "%d"))
+
+    (evil-leader/set-leader "<SPC>")
+    (evil-leader/set-key "SPC" 'execute-extended-command)
+    (evil-leader/set-key "<S-SPC>" 'execute-extended-command-for-buffer)
+    (evil-leader/set-key "<tab>" 'ivy-switch-buffer)
+    (evil-leader/set-key "<escape>" 'keyboard-escape-quit)
+    (evil-leader/set-key "\\" 'evil-switch-to-windows-last-buffer)
+    (evil-leader/set-key ";" 'eval-expression)
+    (evil-leader/set-key "=" 'fff-hydra-zoom/text-scale-increase)
+    (evil-leader/set-key "-" 'fff-hydra-zoom/text-scale-decrease)
+    (evil-leader/set-key "0" 'fff-set-scale-to-zero)
+    (evil-leader/set-key "1" 'delete-other-windows)
+    (evil-leader/set-key "2" 'split-window-below)
+    (evil-leader/set-key "3" 'split-window-right)
+    (evil-leader/set-key "a" 'yas-insert-snippet)
+    (evil-leader/set-key "b s" 'bookmark-set)
+    (evil-leader/set-key "b l" 'bookmark-bmenu-list)
+    (evil-leader/set-key "b w" 'bookmark-save)
+    (evil-leader/set-key "c" 'fff-C-c-C-c)
+    (evil-leader/set-key "d" 'delete-blank-lines)
+    (evil-leader/set-key "D" 'elpy-doc)
+    (evil-leader/set-key "e" 'fff-C-x-C-e)
+    (evil-leader/set-key "f b" 'fff-access-bookmarks)
+    (evil-leader/set-key "f c" 'fff-access-config)
+    (evil-leader/set-key "f f" 'fff-access-sched)
+    (evil-leader/set-key "f h" 'fff-access-hosts)
+    (evil-leader/set-key "f o" 'fff-access-home-dir)
+    (evil-leader/set-key "f p" 'fff-access-phonebook)
+    (evil-leader/set-key "f u" 'fff-access-home-dir)
+    (evil-leader/set-key "h" 'fff-hydra-movement/evil-backward-paragraph)
+    (evil-leader/set-key "H" 'fff-hydra-windsize/windsize-left)
+    (evil-leader/set-key "L" 'fff-hydra-windsize/windsize-right)
+    (evil-leader/set-key "J" 'fff-hydra-windsize/windsize-down)
+    (evil-leader/set-key "j" 'scimax-jupyter-org-hydra/body)
+    (evil-leader/set-key "K" 'fff-hydra-windsize/windsize-up)
+    (evil-leader/set-key "i" 'fff-switch-to-scratch-buffer)
+    (evil-leader/set-key "I" 'fff-switch-to-scratch-buffer-text-mode)
+    (evil-leader/set-key "k" 'fff-hydra-expand-region/er/expand-region)
+    (evil-leader/set-key "l" 'fff-hydra-movement/evil-forward-paragraph)
+    ;; (evil-leader/set-key "l" 'lsp-command-map)
+    (evil-leader/set-key "m" 'counsel-mark-ring)
+    ;; (evil-leader/set-key "p" 'projectile-command-map)         ;; find a new prefix
+    (evil-leader/set-key "p" 'fff-evil-paste-and-indent-after)
+    (evil-leader/set-key "P" 'fff-evil-paste-and-indent-before)
+    (evil-leader/set-key "q" 'delete-window)
+    (evil-leader/set-key "Q" 'kill-buffer-and-window)
+    (evil-leader/set-key "r" 'fff-evil-regex-search)
+    (evil-leader/set-key "R" 'query-replace)
+    (evil-leader/set-key "s" 'save-buffer)
+    (evil-leader/set-key "t" 'vterm)
+    (evil-leader/set-key "T" 'terminal-here)
+    (evil-leader/set-key "u" 'evil-jump-backward)
+    (evil-leader/set-key "U" 'pop-global-mark)
+    ;; (evil-leader/set-key "v" 'fff-toggle-visual-line-mode)
+    ;; (evil-leader/set-key "x <tab>" 'fff-insert-tab)
+    (evil-leader/set-key "x x" ctl-x-map)
+    (evil-leader/set-key "x b" 'list-buffers)
+    (evil-leader/set-key "x 0" 'delete-window)
+    (evil-leader/set-key "x 1" 'delete-other-windows)
+    (evil-leader/set-key "x 2" 'split-window-below)
+    (evil-leader/set-key "x 3" 'split-window-right)
+    (evil-leader/set-key "x o" 'other-window)
+    (evil-leader/set-key "o" 'other-window)
+    (evil-leader/set-key "x f" 'find-file)
+    ;; (evil-leader/set-key "x r" 'counsel-buffer-or-recentf)
+    (evil-leader/set-key "x w" 'write-file)
+    (evil-leader/set-key "x h" 'mark-whole-buffer)
+    (evil-leader/set-key "x SPC b" 'list-buffers)
+    (evil-leader/set-key "x SPC c" 'save-buffers-kill-terminal)
+
+    )
+  ) 
+
+(use-package evil
+  :defer t
+  :after evil-leader
+  :ensure t
+  :init
+
+  (setq evil-undo-system 'undo-fu)
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-fine-undo t)
+  (setq evil-search-wrap 'nil)
+  ;; hitting C-n and C-p doesn't work for the company-mode pop-up
+  ;; after using C-h. The code below resolves this issue
+  (with-eval-after-load 'evil
+    (with-eval-after-load 'company
+      (define-key evil-insert-state-map (kbd "C-n") nil)
+      (define-key evil-insert-state-map (kbd "C-p") nil)
+      (evil-define-key nil company-active-map (kbd "C-n") #'company-select-next)
+      (evil-define-key nil company-active-map (kbd "C-p") #'company-select-previous)))
+  :config
+  (progn
+    (evil-mode 1)
+    (define-key evil-visual-state-map (kbd "<backspace>") 'delete-char)
+    (define-key evil-visual-state-map (kbd "C-/") 'comment-line)
+    (define-key evil-visual-state-map (kbd "j") 'evil-next-visual-line)
+    (define-key evil-visual-state-map (kbd "k") 'evil-previous-visual-line)
+
+    (define-key evil-insert-state-map (kbd "C-w") 'kill-region)
+    (define-key evil-insert-state-map (kbd "M-w") 'easy-kill)
+    (define-key evil-insert-state-map (kbd "C-y") 'yank)
+    (define-key evil-insert-state-map (kbd "M-y") 'yank-pop)
+    (define-key evil-insert-state-map (kbd "C-;") 'hippie-expand)
+    (define-key evil-insert-state-map (kbd "C-'") 'company-complete)
+    (define-key evil-insert-state-map (kbd "C-/") 'yas-expand)
+    (define-key evil-insert-state-map (kbd "<backspace>") 'python-indent-dedent-line-backspace)
+
+    (define-key evil-normal-state-map (kbd "q") 'fff-kill-this-buffer)
+    (define-key evil-normal-state-map (kbd "Q") 'evil-record-macro)
+    (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
+    (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
+    (define-key evil-normal-state-map (kbd "C-/") 'comment-line)
+    ))
+
+(use-package undo-fu
+  :defer t
+  :ensure t)
+
+(use-package evil-surround
+  :ensure t
+  :config
+  (global-evil-surround-mode +1))
+
+(use-package expand-region
+  :defer t
+  :ensure t
+  )
+
+(use-package vterm
+  :defer t
+  :ensure t)
+
+
+(use-package hydra
+  :defer t
+  :ensure t
+  :commands defhydra
+  :config
+  (progn
+
+    (defhydra fff-hydra-movement ()
+      ("h" evil-backward-paragraph)
+      ("l" evil-forward-paragraph)
+      )
+
+    (defhydra fff-hydra-windsize ()
+      ("H" windsize-left)
+      ("L" windsize-right)
+      ("J" windsize-down)
+      ("K" windsize-up)
+      )
+
+    (defhydra fff-hydra-zoom ()
+      ( "=" text-scale-increase)
+      ( "-" text-scale-decrease)
+      ( "0"  (text-scale-set 0))
+      )
+
+    (defhydra fff-hydra-expand-region ()
+      ("k" er/expand-region)
+      ("j" er/contract-region)
+      )
+
+    ))
+
+(use-package windsize
+  :defer t
+  :ensure t
+  :config
+  )
+
+(use-package crux
+  :defer t
+  :ensure t
+  )
+
+(use-package terminal-here
+  :defer t
+  :ensure t
+  :init
+  (setq terminal-here-linux-terminal-command 'st)
+  )
+
+
+
+;; TODO: make it only work in python code block
+;; TODO: bind it to enter, `o', and `C-j' and any other
+;;       new line type function
+
+(defun fff-org-python-newline-and-maybe-indent ()
+  (delete-horizontal-space t)
+  (interactive)
+  (progn
+    (let ((column (save-excursion
+		            (beginning-of-line)
+		            (if (bobp) 0
+                      (beginning-of-line 0)
+                      (if (looking-at "[ \t]*$") 0
+                        (current-indentation))))))
+	  (if (<= (current-column) (current-indentation))
+	      (indent-line-to column)
+	    (save-excursion (indent-line-to column))))
+    (python-indent-line-function))
+  )
+
+
+(defun evil-open-below (count)
+  "Insert a new line below point and switch to Insert state.
+The insertion will be repeated COUNT times."
+  (interactive "p")
+  (unless (eq evil-want-fine-undo t)
+    (evil-start-undo-step))
+  (push (point) buffer-undo-list)
+  (evil-insert-newline-below)
+  (setq evil-insert-count count
+        evil-insert-lines t
+        evil-insert-vcount nil)
+  (evil-insert-state 1)
+  (when evil-auto-indent
+    (fff-org-python-newline-and-maybe-indent)))
+
+
+
+(defun newline-and-indent (&optional arg)
+  "Insert a newline, then indent according to major mode.
+Indentation is done using the value of `indent-line-function'.
+In programming language modes, this is the same as TAB.
+In some text modes, where TAB inserts a tab, this command indents to the
+column specified by the function `current-left-margin'.
+
+With ARG, perform this action that many times.
+
+Also see `open-line' (bound to \\[open-line]) for a command that
+just inserts a newline without doing any indentation."
+  (interactive "*p")
+  (delete-horizontal-space t)
+  (unless arg
+    (setq arg 1))
+  (let ((electric-indent-mode nil))
+    (dotimes (_ arg)
+      (newline nil t)
+      (fff-org-python-newline-and-maybe-indent))))
+
+(defun org-return (&optional indent arg interactive)
+  "Goto next table row or insert a newline.
+
+Calls `org-table-next-row' or `newline', depending on context.
+
+When optional INDENT argument is non-nil, call
+`newline-and-indent' with ARG, otherwise call `newline' with ARG
+and INTERACTIVE.
+
+When `org-return-follows-link' is non-nil and point is on
+a timestamp or a link, call `org-open-at-point'.  However, it
+will not happen if point is in a table or on a \"dead\"
+object (e.g., within a comment).  In these case, you need to use
+`org-open-at-point' directly."
+  (interactive "i\nP\np")
+  (let* ((context (if org-return-follows-link (org-element-context)
+		            (org-element-at-point)))
+         (element-type (org-element-type context)))
+    (cond
+     ;; In a table, call `org-table-next-row'.  However, before first
+     ;; column or after last one, split the table.
+     ((or (and (eq 'table element-type)
+	           (not (eq 'table.el (org-element-property :type context)))
+	           (>= (point) (org-element-property :contents-begin context))
+	           (< (point) (org-element-property :contents-end context)))
+	      (org-element-lineage context '(table-row table-cell) t))
+      (if (or (looking-at-p "[ \t]*$")
+	          (save-excursion (skip-chars-backward " \t") (bolp)))
+	      (insert "\n")
+	    (org-table-justify-field-maybe)
+	    (call-interactively #'org-table-next-row)))
+     ;; On a link or a timestamp, call `org-open-at-point' if
+     ;; `org-return-follows-link' allows it.  Tolerate fuzzy
+     ;; locations, e.g., in a comment, as `org-open-at-point'.
+     ((and org-return-follows-link
+	       (or (and (eq 'link element-type)
+		            ;; Ensure point is not on the white spaces after
+		            ;; the link.
+		            (let ((origin (point)))
+		              (org-with-point-at (org-element-property :end context)
+			            (skip-chars-backward " \t")
+			            (> (point) origin))))
+	           (org-in-regexp org-ts-regexp-both nil t)
+	           (org-in-regexp org-tsr-regexp-both nil  t)
+	           (org-in-regexp org-link-any-re nil t)))
+      (call-interactively #'org-open-at-point))
+     ;; Insert newline in heading, but preserve tags.
+     ((and (not (bolp))
+	       (let ((case-fold-search nil))
+	         (org-match-line org-complex-heading-regexp)))
+      ;; At headline.  Split line.  However, if point is on keyword,
+      ;; priority cookie or tags, do not break any of them: add
+      ;; a newline after the headline instead.
+      (let ((tags-column (and (match-beginning 5)
+			                  (save-excursion (goto-char (match-beginning 5))
+					                          (current-column))))
+	        (string
+	         (when (and (match-end 4) (org-point-in-group (point) 4))
+	           (delete-and-extract-region (point) (match-end 4)))))
+	    ;; Adjust tag alignment.
+	    (cond
+	     ((not (and tags-column string)))
+	     (org-auto-align-tags (org-align-tags))
+	     (t (org--align-tags-here tags-column))) ;preserve tags column
+	    (end-of-line)
+	    (org-show-entry)
+	    (org--newline indent arg interactive)
+	    (when string (save-excursion (insert (org-trim string))))))
+     ;; In a list, make sure indenting keeps trailing text within.
+     ((and (not (eolp))
+	       (org-element-lineage context '(item)))
+      (let ((trailing-data
+	         (delete-and-extract-region (point) (line-end-position))))
+	    (org--newline indent arg interactive)
+	    (save-excursion (insert trailing-data))))
+     (t
+      ;; Do not auto-fill when point is in an Org property drawer.
+      (let ((auto-fill-function (and (not (org-at-property-p))
+				                     auto-fill-function)))
+	    (org--newline indent arg interactive)))))
+  (fff-org-python-newline-and-maybe-indent)
+  )
+
+
+(add-hook 'org-mode-hook 'auto-fill-mode)
