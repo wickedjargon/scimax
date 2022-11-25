@@ -1,28 +1,32 @@
 
 ;; ----- smex-history -----
 (
- eval-buffer
- package-delete
- visual-line-mode
- auto-fill-mode
- crux-open-with
  company-mode
- evil-org-mode
+ visual-line-mode
+ package-install
+ package-refresh-contents
+ load-file
+ scimax-jupyter-org-hydra/body
+ yas-expand
 )
 
 ;; ----- smex-data -----
 (
  (customize-themes . 1)
  (fff-org-python-newline-and-maybe-indent . 1)
- (package-refresh-contents . 1)
+ (package-refresh-contents . 3)
  (evil-org-mode . 2)
  (evil-mode . 3)
  (org-mode . 1)
  (org-mode-restart . 1)
- (company-mode . 1)
+ (company-mode . 3)
  (crux-open-with . 1)
  (auto-fill-mode . 5)
- (visual-line-mode . 1)
+ (visual-line-mode . 2)
  (package-delete . 1)
  (eval-buffer . 2)
+ (package-install . 5)
+ (scimax-jupyter-org-hydra/body . 3)
+ (yas-expand . 3)
+ (load-file . 2)
 )

@@ -1,1 +1,1 @@
-("~/" "~/scimax/")
+("~/vc/journal/" "~/scimax/" "~/")
